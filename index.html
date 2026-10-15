@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Software-only IoT environment and obstacle detection simulator for practical learning.">
+  <title>Smart Environment</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <style>
+    :root{--bg:#f3f7f8;--card:#fff;--ink:#142d35;--muted:#60747b;--teal:#0f766e;--teal2:#d7f4ef;--red:#b42318;--amber:#a15c00;--line:#e0e9eb}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:linear-gradient(135deg,#0f766e,#164e63);color:#fff;padding:22px 18px 26px;border-radius:0 0 24px 24px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .brand{font-size:12px;letter-spacing:1.3px;text-transform:uppercase;opacity:.85;font-weight:700}
+    h1{font-size:26px;line-height:1.15;margin:9px 0}
+    header p{margin:0;color:#d7f4ef;font-size:14px;line-height:1.45}
+    .pill{font-size:11px;background:#ffffff22;border:1px solid #ffffff55;padding:7px 9px;border-radius:99px;white-space:nowrap}
+    main{max-width:760px;margin:auto;padding:16px;display:grid;gap:14px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 4px 16px #14333b08}
+    .metric-label{font-size:12px;color:var(--muted);font-weight:650}
+    .metric{font-size:28px;font-weight:750;letter-spacing:-.7px;margin:7px 0 2px}
+    .unit{font-size:14px;color:var(--muted);font-weight:600}
+    .sub{font-size:12px;color:var(--muted)}
+    .status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 9px;border-radius:99px;background:var(--teal2);color:var(--teal)}
+    .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+    h2{font-size:16px;margin:0 0 12px}
+    .control{margin:15px 0 0}
+    .control-head{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:650}
+    input[type=range]{width:100%;accent-color:var(--teal);margin:12px 0 3px}
+    .ends{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+    .row:last-child{border-bottom:0;padding-bottom:0}
+    .row strong{font-size:13px}
+    .row small{display:block;color:var(--muted);margin-top:3px;font-size:11px}
+    .switch{position:relative;width:46px;height:27px;flex-shrink:0}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;inset:0;background:#cbd5d8;border-radius:99px;transition:.2s}
+    .slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px #0002}
+    .switch input:checked+.slider{background:var(--teal)}
+    .switch input:checked+.slider:before{transform:translateX(19px)}
+    .alert{padding:12px 13px;border-radius:13px;font-size:13px;line-height:1.4;background:#e7f7f2;color:#0f766e;border:1px solid #b7e9dc}
+    .alert.warn{background:#fff4df;color:var(--amber);border-color:#f4d49b}
+    .alert.danger{background:#ffebe9;color:var(--red);border-color:#ffc9c4}
+    .btns{display:flex;gap:9px;flex-wrap:wrap}
+    button{border:0;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;cursor:pointer}
+    .primary{background:var(--teal);color:white}
+    .secondary{background:#e7eff0;color:var(--ink)}
+    .chart-wrap{height:170px;position:relative}
+    canvas{width:100%;height:100%;display:block}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:7px}
+    .legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:5px}
+    .legend span:last-child:before{background:#e29a36}
+    .foot{text-align:center;font-size:11px;color:var(--muted);padding:4px 10px 22px}
+    @media(min-width:620px){main{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}header{padding-left:max(22px,calc((100% - 720px)/2));padding-right:max(22px,calc((100% - 720px)/2))}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">IoT Lab · Practical 01 + 02</div>
+    <span class="pill">SIMULATION MODE</span>
+  </div>
+  <h1>Smart Environment</h1>
+  <p>Monitor simulated environmental sensors and test obstacle alerts — no physical hardware needed.</p>
+</header>
+<main>
+  <section class="grid wide">
+    <div class="card">
+      <div class="metric-label">Temperature</div>
+      <div class="metric"><span id="tempVal">28.0</span><span class="unit"> °C</span></div>
+      <span class="status"><span class="dot"></span><span id="tempStatus">Normal range</span></span>
+    </div>
+    <div class="card">
+      <div class="metric-label">Humidity</div>
+      <div class="metric"><span id="humidityVal">54</span><span class="unit"> %</span></div>
+      <div class="sub">Simulated sensor reading</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Sensor controls</h2>
+    <div class="control">
+      <div class="control-head"><label for="tempRange">Temperature</label><span><span id="tempControlVal">28</span> °C</span></div>
+      <input id="tempRange" type="range" min="10" max="50" value="28" step="1">
+      <div class="ends"><span>10 °C</span><span>50 °C</span></div>
+    </div>
+    <div class="control">
+      <div class="control-head"><label for="humidityRange">Humidity</label><span><span id="humidityControlVal">54</span> %</span></div>
+      <input id="humidityRange" type="range" min="10" max="100" value="54" step="1">
+      <div class="ends"><span>10%</span><span>100%</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Obstacle detection</h2>
+    <div class="row">
+      <div><strong>Simulate an obstacle</strong><small>Toggle to imitate an IR sensor detecting an object.</small></div>
+      <label class="switch" aria-label="Simulate obstacle"><input id="obstacleToggle" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div><strong>LED indicator</strong><small id="ledCaption">LED is OFF — path clear</small></div>
+      <span id="ledStatus" class="status">OFF</span>
+    </div>
+    <div class="row">
+      <div><strong>Buzzer alert</strong><small id="buzzerCaption">Buzzer is OFF</small></div>
+      <span id="buzzerStatus" class="status">OFF</span>
+    </div>
+    <div id="alertBox" class="alert" role="status" aria-live="polite">All systems normal. No obstacle detected.</div>
+  </section>
+
+  <section class="card wide">
+    <h2>Live sensor trend</h2>
+    <div class="chart-wrap"><canvas id="chart" aria-label="Temperature and humidity trend chart"></canvas></div>
+    <div class="legend"><span>Temperature (°C)</span><span>Humidity (scaled)</span></div>
+    <p class="sub">The chart updates when you change a sensor value. Humidity is scaled for display only.</p>
+  </section>
+
+  <section class="card wide">
+    <h2>Practical controls</h2>
+    <div class="btns">
+      <button class="primary" id="randomBtn">Generate sample readings</button>
+      <button class="secondary" id="resetBtn">Reset simulation</button>
+    </div>
+    <p class="sub" style="margin-bottom:0">Learning note: readings and alerts are simulated in your browser. This app does not connect to real sensors or trigger a physical buzzer/LED.</p>
+  </section>
+</main>
+<div class="foot">Smart Environment Simulator · Built for IoT practical learning</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const tempRange = $('tempRange'), humidityRange = $('humidityRange'), obstacleToggle = $('obstacleToggle');
+  let history = [];
+  function drawChart(){
+    const c=$('chart'), rect=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    c.width=Math.max(280,rect.width)*dpr; c.height=Math.max(140,rect.height)*dpr;
+    const ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+    const w=c.width/dpr,h=c.height/dpr,pad=24;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='#e3ecee';ctx.lineWidth=1;
+    for(let i=0;i<4;i++){let y=pad+i*(h-2*pad)/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();}
+    if(history.length<2)return;
+    const plot=(key,color,scale)=>{ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;history.forEach((v,i)=>{const x=pad+i*(w-2*pad)/(history.length-1),y=h-pad-(v[key]-scale[0])/(scale[1]-scale[0])*(h-2*pad);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();};
+    plot('t','#0f766e',[10,50]);plot('h','#e29a36',[10,100]);
+  }
+  function addHistory(t,h){history.push({t,h});if(history.length>18)history.shift();drawChart();}
+  function render(){
+    const t=Number(tempRange.value), h=Number(humidityRange.value), obstacle=obstacleToggle.checked;
+    $('tempVal').textContent=t.toFixed(1);$('humidityVal').textContent=h;
+    $('tempControlVal').textContent=t;$('humidityControlVal').textContent=h;
+    const tempWarn=t>=40;
+    $('tempStatus').textContent=tempWarn?'High temperature':'Normal range';
+    const ts=document.querySelector('.grid .status');
+    ts.style.background=tempWarn?'#fff4df':'#d7f4ef';ts.style.color=tempWarn?'#a15c00':'#0f766e';
+    $('ledStatus').textContent=obstacle?'ON':'OFF';$('buzzerStatus').textContent=obstacle?'ON':'OFF';
+    $('ledCaption').textContent=obstacle?'LED is ON — obstacle detected':'LED is OFF — path clear';
+    $('buzzerCaption').textContent=obstacle?'Buzzer alert active (visual simulation)':'Buzzer is OFF';
+    $('alertBox').className='alert'+(obstacle?' danger':tempWarn?' warn':'');
+    $('alertBox').textContent=obstacle?'WARNING: Obstacle detected! LED and buzzer indicators are ON.':tempWarn?'Temperature is high. Check the simulated environment.':'All systems normal. No obstacle detected.';
+    addHistory(t,h);
+  }
+  tempRange.addEventListener('input',render);humidityRange.addEventListener('input',render);obstacleToggle.addEventListener('change',render);
+  $('randomBtn').addEventListener('click',()=>{tempRange.value=Math.floor(18+Math.random()*28);humidityRange.value=Math.floor(25+Math.random()*66);render();});
+  $('resetBtn').addEventListener('click',()=>{tempRange.value=28;humidityRange.value=54;obstacleToggle.checked=false;history=[];render();});
+  window.addEventListener('resize',drawChart);
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  render();render();
+})();
+</script>
+</body>
+</html>
